@@ -43,7 +43,7 @@ public class LexerRouter {
     private final JavaLexer javaLexer = new JavaLexer();
 
     private void save(String path, String content) throws IOException {
-        try(FileOutputStream outputStream = new FileOutputStream(path)) {
+        try (FileOutputStream outputStream = new FileOutputStream(path)) {
             byte[] strToBytes = content.getBytes();
             outputStream.write(strToBytes);
         }
@@ -98,22 +98,26 @@ public class LexerRouter {
                 .required(true);
 
         var argParser = ArgParser.create()
+                .header("Oliva is a assistant program. It just cut source code to lora training data.")
+                .formatter("%1$-20s %2$-20s %3$-60s\n")
                 .option(source)
                 .option(target);
 
         argParser.parse(args)
                 .onFailure(err -> {
                     System.err.println(err.getMessage());
-                }).flatMap(result ->
-                        Tuple2.liftA(result.option("source"),
-                                result.option("target")))
-                .onSuccess(tuple -> {
+                }).onSuccess(result -> {
+                    result.autoHelp();
+
+                    var tuple = Tuple2.liftA(result.option("source"),
+                            result.option("target")).get();
+
                     var src = tuple.item0();
                     var tgt = tuple.item1();
                     List<Entity> entities = new ArrayList<>();
                     List<Exception> errors = new ArrayList<>();
-                    for(var s: src){
-                        switch (lexer.process(s)){
+                    for (var s : src) {
+                        switch (lexer.process(s)) {
                             case Success(var ents): {
                                 entities.addAll(ents);
                                 break;

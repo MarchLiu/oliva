@@ -12,7 +12,7 @@
         <dependency>
             <groupId>io.github.marchliu</groupId>
             <artifactId>jaskell-rocks</artifactId>
-            <version>1.8.0</version>
+            <version>1.8.1</version>
         </dependency>
 
         <dependency>
@@ -62,7 +62,7 @@
                 <artifactId>exec-maven-plugin</artifactId>
                 <version>3.1.0</version>
                 <configuration>
-                    <mainClass>io.github.marchliu.lexers.java.JavaLexer</mainClass>
+                    <mainClass>io.github.marchliu.lexers.LexerRouter</mainClass>
                 </configuration>
             </plugin>
         </plugins>
