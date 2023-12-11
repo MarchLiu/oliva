@@ -39,3 +39,9 @@ build/
 
 ### Mac OS ###
 .DS_Store
+Modelfile
+trans_data_oliva.json
+trans_three_languages.json
+model_save/adapter_config.json
+model_save/adapter_model.safetensors
+model_save/README.md

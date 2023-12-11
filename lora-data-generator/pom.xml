@@ -12,7 +12,7 @@
         <dependency>
             <groupId>io.github.marchliu</groupId>
             <artifactId>jaskell-rocks</artifactId>
-            <version>1.8.1</version>
+            <version>1.8.2</version>
         </dependency>
 
         <dependency>
@@ -64,6 +64,31 @@
                 <configuration>
                     <mainClass>io.github.marchliu.lexers.LexerRouter</mainClass>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>3.6.0</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <addClasspath>true</addClasspath>
+                            <mainClass>com.package.YourMainClass</mainClass>
+                        </manifest>
+                    </archive>
+                    <descriptorRefs>
+                        <descriptorRef>jar-with-dependencies</descriptorRef>
+                    </descriptorRefs>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>assemble-all</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

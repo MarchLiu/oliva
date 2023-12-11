@@ -13,7 +13,7 @@ apache commons-cli 。但是 Jaskell 中的这个版本更能满足我的需求�
 特别是与 Jaskell 中其它函数式编程设计结合的更好。
 
 这个项目用 Java 21开发，并且用到了预览版本的语言功能，所以如果在本地
-运行，需要安装Java 21环境，并且给 java 加上 `--enable-preview` 
+运行，需要安装Java 21 环境，并且给 java 加上 `--enable-preview` 
 参数。
 
 基本的用法类似这样：

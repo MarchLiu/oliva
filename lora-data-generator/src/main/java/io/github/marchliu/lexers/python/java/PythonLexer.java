@@ -1,4 +1,4 @@
-package io.github.marchliu.lexers.java;
+package io.github.marchliu.lexers.python.java;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -26,7 +26,7 @@ import static jaskell.parsec.common.Atom.pack;
 import static jaskell.parsec.common.Combinator.*;
 import static jaskell.parsec.common.Txt.*;
 
-public class JavaLexer {
+public class PythonLexer {
     ObjectMapper mapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
     TypeReference<List<Entity>> reference = new TypeReference<List<Entity>>() {
     };
@@ -60,8 +60,8 @@ public class JavaLexer {
         };
     }
 
-    Parsec<Character, String> quote = text("\"").attempt();
-    Parsec<Character, String> triQuote = text("\"\"\"").attempt();
+    Parsec<Character, String> quote = many(chIn("rf")).then(text("\"")).attempt();
+    Parsec<Character, String> triQuote = many(chIn("rf")).then(text("\"\"\"")).attempt();
 
     Parsec<Character, String> strParser = state -> {
         if (triQuote.exec(state).isOk()) {
@@ -83,34 +83,13 @@ public class JavaLexer {
         }
     }).bind(joinChars());
 
-    Parsec<Character, String> singleLineComment = text("//").then(state -> {
+    Parsec<Character, String> singleLineComment = text("#").then(state -> {
         var newline = newline().attempt();
-        StringBuilder sb = new StringBuilder().append("//");
+        StringBuilder sb = new StringBuilder().append("#");
         while (true) {
             switch (newline.exec(state)) {
                 case Success(var nl): {
                     sb.append(nl);
-                    return sb.toString();
-                }
-                case Failure(var error): {
-                    if (error instanceof EOFException) {
-                        return sb.toString();
-                    } else {
-                        var c = state.next();
-                        sb.append(c);
-                    }
-                }
-            }
-        }
-    });
-
-    Parsec<Character, String> multiLineComment = text("/*").then(state -> {
-        var stop = text("*/").attempt();
-        StringBuilder sb = new StringBuilder().append("/*");
-        while (true) {
-            switch (stop.exec(state)) {
-                case Success(var stp): {
-                    sb.append(stp);
                     return sb.toString();
                 }
                 case Failure(var error): {
@@ -136,8 +115,7 @@ public class JavaLexer {
 
     Parsec<Character, String> symbols = Combinator.<Character, Character>many1(state -> {
         var stop = choice(text("\"").attempt(),
-                text("//").attempt(),
-                text("/*").attempt(),
+                text("#").attempt(),
                 space().bind(c -> pack(c.toString())).attempt(),
                 tap).ahead();
         var test = stop.exec(state);
@@ -160,7 +138,6 @@ public class JavaLexer {
             validName.attempt(),
             symbols.attempt(),
             singleLineComment.attempt(),
-            multiLineComment.attempt(),
             charLiteral.attempt(),
             strParser);
     Parsec<Character, List<String>> parser = sepBy(tokenParser, skipSpaces());
@@ -187,7 +164,7 @@ public class JavaLexer {
             List<String> material = tokens.subList(pos, idx);
             int headerSize = Math.min(random.nextInt(4, 16), material.size());
             var input = String.join(" ", material.subList(0, headerSize));
-            var instruction = STR."java: \{input}";
+            var instruction = STR."python: \{input}";
             var output = String.join(" ", material);
 
             var entity = new Entity(instruction, input, output);
@@ -198,7 +175,7 @@ public class JavaLexer {
     }
 
     public Try<List<Entity>> process(String path) {
-        System.out.println(STR."java lexer processing: \{path}");
+        System.out.println(STR."python lexer processing: \{path}");
         return Try.tryIt(() -> {
             var source = load(path);
             var tokens = tokens(source);

@@ -192,7 +192,7 @@ public class CLexer {
             List<String> material = tokens.subList(pos, idx);
             int headerSize = Math.min(random.nextInt(4, 16), material.size());
             var intput = String.join(" ", material.subList(0, headerSize));
-            var instruction = "c: " + intput;
+            var instruction = STR."c: \{intput}";
             var output = String.join(" ", material);
 
             var entity = new Entity(instruction, intput, output);
@@ -203,7 +203,7 @@ public class CLexer {
     }
 
     public Try<List<Entity>> process(String path) {
-        System.out.println("c lexer process: "+path);
+        System.out.println(STR."c lexer processing: \{path}");
         return Try.tryIt(() -> {
             var source = load(path);
             var tokens = tokens(source);
