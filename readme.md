@@ -23,3 +23,22 @@ java --enable-preview --source /data/project0 --source /data/project1 --target /
 ```
 
 可以通过多次设定 `--source` 参数传入多个项目的路径，最终它们的信息会统一写到 `--target` 所指定的文件。
+
+## 外部工具
+
+1. 安装 [llama factory](https://github.com/hiyouga/LLaMA-Factory/)
+2. 安装 [llama.cpp](https://github.com/ggerganov/llama.cpp)
+3. 安装 [ollama](https://ollama.ai/)
+4. 安装 [blue-shell](https://github.com/MarchLiu/blue-shell)
+5. 安装 jdk21
+
+## 训练和使用
+
+1. 将 staff 目录下的 export.sh 和 train.sh 复制到 llama factory 目录。
+2. 修改文件内容使关键路径符合你的环境。如果不需要像我一样基于本地的模型文件，可以自行修改为符合 huggingface 或 modelscope 的标识。
+3. 先按照 lora-data-generator 的说明构建程序，生成训练需要的文件
+4. 在 llama factory 目录下执行 `./train.sh` 生成预训练文件
+5. 在 llama factory 目录下执行 `./export.sh` 生成导出的模型
+6. 按 llama.cpp 的文档生成可以为 ollama 使用的 `.gguf` 文件 `python convert.py ~/jobs/llm/oliva/model_export`。
+7. 按 ollama 的文档创建 ollama 模型 `ollama create oliva -f ./Modelfile`
+8. 此时 ollama 服务应该已经在运行，启动 blue shell，即可使用自己定制的模型了。`python -m blueshell.shell -m oliva  -f markdown`
