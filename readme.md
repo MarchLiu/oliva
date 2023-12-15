@@ -42,3 +42,9 @@ java --enable-preview --source /data/project0 --source /data/project1 --target /
 6. 按 llama.cpp 的文档生成可以为 ollama 使用的 `.gguf` 文件 `python convert.py ~/jobs/llm/oliva/model_export`。
 7. 按 ollama 的文档创建 ollama 模型 `ollama create oliva -f ./Modelfile`
 8. 此时 ollama 服务应该已经在运行，启动 blue shell，即可使用自己定制的模型了。`python -m blueshell.shell -m oliva  -f markdown`
+
+## 补充说明
+
+我是在一台 apple m3 Macbook 上进行的训练，而业界流行的是使用 N 卡的 CUDA 体系，所以遇到了很多兼容问题，在这个过程中我根据
+提示会关掉一些优化参数，因此 train.sh 和 export.sh 里的参数都不是最优的，如果你使用 N 卡，按照 llama factory 的文档训练
+就好了。
