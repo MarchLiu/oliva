@@ -35,6 +35,7 @@ java --enable-preview --source /data/project0 --source /data/project1 --target /
 ## 训练和使用
 
 1. 将 staff 目录下的 export.sh 和 train.sh 复制到 llama factory 目录。
+2. 将 staff 目录下的 dataset_info.json 复制到 llama factory 的 data 目录。
 2. 修改文件内容使关键路径符合你的环境。如果不需要像我一样基于本地的模型文件，可以自行修改为符合 huggingface 或 modelscope 的标识。
 3. 先按照 lora-data-generator 的说明构建程序，生成训练需要的文件
 4. 在 llama factory 目录下执行 `./train.sh` 生成预训练文件

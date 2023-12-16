@@ -1,0 +1,11 @@
+{
+    "oliva": {
+	"file_name": "/Users/mars/jobs/llm/oliva/trans_data_oliva.json",
+	"ranking": false,
+	"columns": {
+	    "prompt": "instruction",
+	    "query": "input",
+	    "response": "output"
+	}
+    }
+}

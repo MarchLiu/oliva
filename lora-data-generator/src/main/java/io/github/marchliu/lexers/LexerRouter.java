@@ -4,7 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import io.github.marchliu.lexers.c.CLexer;
 import io.github.marchliu.lexers.java.JavaLexer;
-import io.github.marchliu.lexers.python.java.PythonLexer;
+import io.github.marchliu.lexers.nlp.NlpLexer;
+import io.github.marchliu.lexers.python.PythonLexer;
+import io.github.marchliu.lexers.scala.java.ScalaLexer;
 import io.github.marchliu.lora.Entity;
 import jaskell.argsparser.ArgParser;
 import jaskell.argsparser.Option;
@@ -28,9 +30,16 @@ public class LexerRouter {
 
     private final CLexer cLexer = new CLexer();
     private final JavaLexer javaLexer = new JavaLexer();
+    private final ScalaLexer scalaLexer = new ScalaLexer();
     private final PythonLexer pythonLexer = new PythonLexer();
+    private final NlpLexer nlpLexer = new NlpLexer();
     private final AtomicInteger total = new AtomicInteger();
     private final AtomicInteger counter = new AtomicInteger();
+    private final List<String> javaSources = new ArrayList<>();
+    private final List<String> cSources = new ArrayList<>();
+    private final List<String> scalaSources = new ArrayList<>();
+    private final List<String> pySources = new ArrayList<>();
+    private final List<String> textSources = new ArrayList<>();
 
     private void save(String path, String content) throws IOException {
         try (FileOutputStream outputStream = new FileOutputStream(path)) {
@@ -39,7 +48,7 @@ public class LexerRouter {
         }
     }
 
-    public void accumulate(String projectDir) {
+    public void prepare(String projectDir) {
         try (Stream<Path> stream = Files.walk(Paths.get(projectDir))) {
             List<Path> paths = stream.toList();
             List<String> filenames = paths.stream()
@@ -48,43 +57,45 @@ public class LexerRouter {
                     .map(Path::toString)
                     .toList();
 
-            var javaSources = filenames.stream()
-                    .filter(p -> p.endsWith(".java"))
-                    .toList();
-            var cSources = filenames.stream()
+            cSources.addAll(filenames.stream()
                     .filter(p -> p.endsWith(".c"))
-                    .toList();
-            var pySources = filenames.stream()
+                    .toList());
+            javaSources.addAll(filenames.stream()
+                    .filter(p -> p.endsWith(".java"))
+                    .toList());
+            scalaSources.addAll(filenames.stream()
+                    .filter(p -> p.endsWith(".scala") || p.endsWith(".sbt"))
+                    .toList());
+            textSources.addAll(filenames.stream()
+                    .filter(p -> p.endsWith(".txt"))
+                    .toList());
+            pySources.addAll(filenames.stream()
                     .filter(p -> p.endsWith(".py"))
-                    .toList();
-            total.addAndGet(javaSources.size() + cSources.size() + pySources.size());
+                    .toList());
+            total.set(cSources.size()
+                    + javaSources.size()
+                    + scalaSources.size()
+                    + textSources.size()
+                    + pySources.size());
         } catch (Exception err) {
             err.printStackTrace();
         }
     }
 
-    public Try<List<Entity>> process(String projectDir) {
+    public Try<List<Entity>> process() {
         List<Entity> entities = new ArrayList<>();
         List<Exception> errors = new ArrayList<>();
-        try (Stream<Path> stream = Files.walk(Paths.get(projectDir))) {
-            List<Path> paths = stream.toList();
-            List<String> filenames = paths.stream()
-                    .filter(Files::isRegularFile)
-                    .map(Path::toAbsolutePath)
-                    .map(Path::toString)
-                    .toList();
+        try {
+            List<Try<List<Entity>>> subset = new ArrayList<>();
 
-            var javaSources = filenames.stream()
-                    .filter(p -> p.endsWith(".java"))
-                    .toList();
-            var cSources = filenames.stream()
-                    .filter(p -> p.endsWith(".c"))
-                    .toList();
-            var pySources = filenames.stream()
-                    .filter(p -> p.endsWith(".py"))
-                    .toList();
+            subset.addAll(cSources.stream().map(fn -> {
+                System.out.printf("[%d/%d] ",
+                        counter.incrementAndGet(),
+                        total.get());
+                return cLexer.process(fn);
+            }).toList());
 
-            var subset = new ArrayList<>(javaSources.stream()
+            subset.addAll(javaSources.stream()
                     .map(fn -> {
                         System.out.printf("[%d/%d] ",
                                 counter.incrementAndGet(),
@@ -92,11 +103,19 @@ public class LexerRouter {
                         return javaLexer.process(fn);
                     }).toList());
 
-            subset.addAll(cSources.stream().map(fn -> {
+            subset.addAll(scalaSources.stream()
+                    .map(fn -> {
+                        System.out.printf("[%d/%d] ",
+                                counter.incrementAndGet(),
+                                total.get());
+                        return scalaLexer.process(fn);
+                    }).toList());
+
+            subset.addAll(textSources.stream().map(fn -> {
                 System.out.printf("[%d/%d] ",
                         counter.incrementAndGet(),
                         total.get());
-                return cLexer.process(fn);
+                return nlpLexer.process(fn);
             }).toList());
 
             subset.addAll(pySources.stream().map(fn -> {
@@ -153,18 +172,16 @@ public class LexerRouter {
                     var tgt = tuple.item1();
                     List<Entity> entities = new ArrayList<>();
                     for (var s : src) {
-                        lexer.accumulate(s);
+                        lexer.prepare(s);
                     }
 
-                    for (var s : src) {
-                        switch (lexer.process(s)) {
-                            case Success(var ents): {
-                                entities.addAll(ents);
-                                break;
-                            }
-                            case Failure(var error):
-                                error.printStackTrace();
+                    switch (lexer.process()) {
+                        case Success(var ents): {
+                            entities.addAll(ents);
+                            break;
                         }
+                        case Failure(var error):
+                            error.printStackTrace();
                     }
                     var content = lexer.mapper.writeValueAsString(entities);
                     lexer.save(tgt.first(), content);

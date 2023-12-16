@@ -1,44 +1,26 @@
 package io.github.marchliu.lexers.c;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import io.github.marchliu.lora.Entity;
-import jaskell.argsparser.ArgParser;
-import jaskell.argsparser.Parameter;
+import io.github.marchliu.lexers.Lexer;
+import io.github.marchliu.lexers.Token;
 import jaskell.parsec.common.Atom;
 import jaskell.parsec.common.Combinator;
 import jaskell.parsec.common.Parsec;
-import jaskell.parsec.common.TxtState;
 import jaskell.util.Failure;
 import jaskell.util.Success;
-import jaskell.util.Try;
-import jaskell.util.Tuple2;
 
 import java.io.EOFException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
-import java.util.stream.Stream;
 
 import static jaskell.parsec.common.Atom.one;
 import static jaskell.parsec.common.Atom.pack;
 import static jaskell.parsec.common.Combinator.*;
 import static jaskell.parsec.common.Txt.*;
 
-public class CLexer {
-    ObjectMapper mapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
-    TypeReference<List<Entity>> reference = new TypeReference<List<Entity>>() {
-    };
+public class CLexer implements Lexer {
 
     Parsec<Character, String> escapeChar = ch('\\')
             .then(one())
-            .bind(c -> pack(STR. "\\\{ c }" ));
+            .bind(c -> pack(STR."\\\{c}"));
     Parsec<Character, String> oneChar = Atom.<Character>one().bind(c -> pack(c.toString()));
     Parsec<Character, String> charParser = choice(escapeChar.attempt(), oneChar);
     StringBuilder sb = new StringBuilder("[\n");
@@ -84,7 +66,7 @@ public class CLexer {
         if (Character.isLetterOrDigit(c) || c == '_' || c == '.' || c == '#') {
             return c;
         } else {
-            throw state.trap(STR. "unexpect char '\{ c }'" );
+            throw state.trap(STR."unexpect char '\{c}'");
         }
     }).bind(joinChars());
 
@@ -135,7 +117,7 @@ public class CLexer {
         if (Character.isLetterOrDigit(c)) {
             return c.toString();
         } else {
-            throw state.trap(STR. "current char [\{ c }] isn't a name char" );
+            throw state.trap(STR."current char [\{c}] isn't a name char");
         }
     };
 
@@ -147,7 +129,7 @@ public class CLexer {
                 tap).ahead();
         var test = stop.exec(state);
         if (test.isOk()) {
-            var message = STR. "symbol stop at '\{ test.get() }' (\{ state.status() }) " ;
+            var message = STR."symbol stop at '\{test.get()}' (\{state.status()}) ";
             throw state.trap(message);
         } else {
             return state.next();
@@ -161,61 +143,23 @@ public class CLexer {
                                     .bind(value -> pack(String.format("\\%c", value))),
                             chNone("\\").bind(value -> pack(value.toString()))));
 
-    Parsec<Character, String> tokenParser = choice(decimal().attempt(),
-            validName.attempt(),
-            symbols.attempt(),
-            singleLineComment.attempt(),
-            multiLineComment.attempt(),
-            charLiteral.attempt(),
-            strParser);
-    Parsec<Character, List<String>> parser = sepBy(tokenParser, skipSpaces());
+    Parsec<Character, Token> tokenParser = choice(decimal().bind(Token::word).attempt(),
+            validName.bind(Token::word).attempt(),
+            symbols.bind(Token::symbol).attempt(),
+            singleLineComment.bind(Token::text).attempt(),
+            multiLineComment.bind(Token::text).attempt(),
+            charLiteral.bind(Token::literal).attempt(),
+            strParser.bind(Token::literal));
 
-    List<String> tokens(String source) throws Exception {
-        var state = new TxtState(source);
-        var result = parser.exec(state);
-        return result.get();
+    Parsec<Character, List<Token>> parser = sepBy(tokenParser, skipSpaces());
+
+    @Override
+    public Parsec<Character, List<Token>> getParser() {
+        return parser;
     }
 
-    String load(String filename) throws IOException {
-        var path = Paths.get(filename);
-        var bytes = Files.readAllBytes(path);
-        return new String(bytes);
+    @Override
+    public String getName() {
+        return "c lexer";
     }
-
-    List<Entity> shuffle(List<String> tokens) {
-        List<Entity> result = new ArrayList<>();
-        Random random = new Random();
-        int pos = 0;
-        while (pos < tokens.size()) {
-            int step = random.nextInt(32, 128);
-            int idx = Math.min(pos + step, tokens.size());
-            List<String> material = tokens.subList(pos, idx);
-            int headerSize = Math.min(random.nextInt(4, 16), material.size());
-            var intput = String.join(" ", material.subList(0, headerSize));
-            var instruction = STR."c: \{intput}";
-            var output = String.join(" ", material);
-
-            var entity = new Entity(instruction, intput, output);
-            result.add(entity);
-            pos = idx;
-        }
-        return result;
-    }
-
-    public Try<List<Entity>> process(String path) {
-        System.out.println(STR."c lexer processing: \{path}");
-        return Try.tryIt(() -> {
-            var source = load(path);
-            var tokens = tokens(source);
-            return shuffle(tokens);
-        });
-    }
-
-    public void saveTrainData(String path, String content) throws IOException {
-        try (FileOutputStream outputStream = new FileOutputStream(path)) {
-            byte[] strToBytes = content.getBytes();
-            outputStream.write(strToBytes);
-        }
-    }
-
 }

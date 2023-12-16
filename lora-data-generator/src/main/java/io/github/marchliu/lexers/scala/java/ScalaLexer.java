@@ -1,4 +1,4 @@
-package io.github.marchliu.lexers.java;
+package io.github.marchliu.lexers.scala.java;
 
 import io.github.marchliu.lexers.Lexer;
 import io.github.marchliu.lexers.Token;
@@ -16,7 +16,7 @@ import static jaskell.parsec.common.Atom.pack;
 import static jaskell.parsec.common.Combinator.*;
 import static jaskell.parsec.common.Txt.*;
 
-public class JavaLexer implements Lexer {
+public class ScalaLexer implements Lexer {
 
     Parsec<Character, String> escapeChar = ch('\\')
             .then(one())
