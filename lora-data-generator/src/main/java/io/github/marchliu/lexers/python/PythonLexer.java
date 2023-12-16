@@ -132,8 +132,7 @@ public class PythonLexer implements Lexer {
             validName.bind(Token::symbol).attempt(),
             symbols.bind(Token::symbol).attempt(),
             singleLineComment.bind(Token::text).attempt(),
-            charLiteral.bind(Token::literal).attempt(),
-            strParser.bind(Token::literal));
+            strParser.bind(Token::text));
     Parsec<Character, List<Token>> parser = state -> {
         List<Token> result = new ArrayList<>();
         instruction.exec(state); // skip head instruction #!...
